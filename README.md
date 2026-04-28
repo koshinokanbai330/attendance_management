@@ -33,6 +33,18 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Building a standalone .exe
+
+Run `build.bat` on Windows to produce a single-file executable (`dist\attendance_management.exe`):
+
+```bat
+build.bat
+```
+
+The script installs all required dependencies (including [PyInstaller](https://pyinstaller.org/)) and then calls PyInstaller using the included `attendance_management.spec` configuration.
+
+Once the build completes, distribute `dist\attendance_management.exe` — no Python installation is required on the target machine.
+
 1. Click **フォルダ選択** to choose where the Excel files will be saved.
 2. Click **始業** when you start work — the time is written to Excel immediately.
 3. Click **終業** when you finish work — the time and calculated work time are written to Excel.
