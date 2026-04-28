@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.attendance_config.json
+Attendance_Sheet_*.xlsx
+Attendance_Sheet_*.csv
