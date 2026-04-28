@@ -15,6 +15,7 @@ Layout
 import os
 import subprocess
 import sys
+import threading
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog, messagebox
@@ -39,7 +40,8 @@ class AttendanceApp:
         self._build_ui()
         self._load_today_times()
         self._update_clock()
-        self._check_previous_day()
+        # Run previous-day check in a background thread so the window opens immediately
+        threading.Thread(target=self._check_previous_day, daemon=True).start()
 
     # ------------------------------------------------------------------
     # UI construction
@@ -55,13 +57,12 @@ class AttendanceApp:
         self.folder_var = tk.StringVar(
             value=self.config.folder_path if self.config.folder_path else "未設定"
         )
-        tk.Label(
+        tk.Entry(
             self.root,
             textvariable=self.folder_var,
             width=45,
-            anchor="w",
-            relief="sunken",
-            bg="white",
+            state="readonly",
+            readonlybackground="white",
         ).grid(row=0, column=1, columnspan=2, sticky="ew", **pad)
         tk.Button(
             self.root,
@@ -75,13 +76,12 @@ class AttendanceApp:
             row=1, column=0, sticky="e", **pad
         )
         self.filename_var = tk.StringVar(value=self._filename_display())
-        tk.Label(
+        tk.Entry(
             self.root,
             textvariable=self.filename_var,
             width=45,
-            anchor="w",
-            relief="sunken",
-            bg="white",
+            state="readonly",
+            readonlybackground="white",
         ).grid(row=1, column=1, columnspan=2, sticky="ew", **pad)
         tk.Button(
             self.root,
@@ -126,7 +126,7 @@ class AttendanceApp:
             width=8,
             anchor="w",
         ).grid(row=5, column=1, sticky="w", **pad)
-        tk.Button(
+        self.start_btn = tk.Button(
             self.root,
             text="始業",
             width=10,
@@ -135,7 +135,8 @@ class AttendanceApp:
             activebackground="#2E7D32",
             font=("", 11, "bold"),
             command=self._record_start,
-        ).grid(row=5, column=2, **pad)
+        )
+        self.start_btn.grid(row=5, column=2, **pad)
 
         # ── Row 6 : End time ─────────────────────────────────────────────
         tk.Label(self.root, text="終業時刻:", anchor="e").grid(
@@ -181,6 +182,7 @@ class AttendanceApp:
         start, end = self.manager.get_today_times()
         if start:
             self.start_time_var.set(str(start))
+            self.start_btn.config(state="disabled")
         if end:
             self.end_time_var.set(str(end))
 
@@ -196,7 +198,12 @@ class AttendanceApp:
     # ------------------------------------------------------------------
 
     def _choose_folder(self) -> None:
-        path = filedialog.askdirectory(title="勤怠データの保存先フォルダを選択してください")
+        current = self.folder_var.get()
+        initial = current if os.path.isdir(current) else None
+        path = filedialog.askdirectory(
+            title="勤怠データの保存先フォルダを選択してください",
+            initialdir=initial,
+        )
         if not path:
             return
         self.config.folder_path = path
@@ -234,6 +241,7 @@ class AttendanceApp:
         result = self.manager.record_start(now)
         if result:
             self.start_time_var.set(result)
+            self.start_btn.config(state="disabled")
             messagebox.showinfo("始業", f"始業時刻を記録しました: {result}")
         else:
             messagebox.showerror("エラー", "始業時刻の記録に失敗しました。")
