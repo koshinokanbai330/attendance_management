@@ -46,6 +46,9 @@ The script installs all required dependencies (including [PyInstaller](https://p
 Once the build completes, distribute the **entire `dist\attendance_management\` folder** — no Python installation is required on the target machine.
 The entry point is `dist\attendance_management\attendance_management.exe`.
 
+> **Note**: The build produces **only** the `dist\attendance_management\` folder.
+> No standalone `dist\attendance_management.exe` is generated in the `dist\` root.
+
 > **Startup time**: The build uses PyInstaller's *onedir* (directory-based) mode instead of the previous *onefile* mode.
 > Unlike a single-file executable, which must extract all bundled files to a temporary directory on every launch, *onedir* runs the files directly from the distribution folder.
 > This significantly reduces startup time (typically from ~10 seconds down to 1–2 seconds on Windows 11 SSD).
