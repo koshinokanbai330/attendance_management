@@ -1,6 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec file for attendance_management
-# Produces a single-file Windows executable with no console window.
+# Produces a directory-based (onedir) Windows executable with no console window.
+# Using onedir instead of onefile avoids extracting files to a temp directory on
+# every launch, which significantly reduces startup time.
 
 a = Analysis(
     ["main.py"],
@@ -26,8 +28,6 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
     name="attendance_management",
     debug=False,
@@ -35,11 +35,20 @@ exe = EXE(
     strip=False,
     upx=True,
     upx_exclude=[],
-    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="attendance_management",
 )
