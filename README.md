@@ -33,9 +33,9 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## Building a standalone .exe
+## Building a standalone executable
 
-Run `build.bat` on Windows to produce a single-file executable (`dist\attendance_management.exe`):
+Run `build.bat` on Windows to produce a directory-based executable under `dist\attendance_management\`:
 
 ```bat
 build.bat
@@ -43,7 +43,12 @@ build.bat
 
 The script installs all required dependencies (including [PyInstaller](https://pyinstaller.org/)) and then calls PyInstaller using the included `attendance_management.spec` configuration.
 
-Once the build completes, distribute `dist\attendance_management.exe` — no Python installation is required on the target machine.
+Once the build completes, distribute the **entire `dist\attendance_management\` folder** — no Python installation is required on the target machine.
+The entry point is `dist\attendance_management\attendance_management.exe`.
+
+> **Startup time**: The build uses PyInstaller's *onedir* (directory-based) mode instead of the previous *onefile* mode.
+> Unlike a single-file executable, which must extract all bundled files to a temporary directory on every launch, *onedir* runs the files directly from the distribution folder.
+> This significantly reduces startup time (typically from ~10 seconds down to 1–2 seconds on Windows 11 SSD).
 
 1. Click **フォルダ選択** to choose where the Excel files will be saved.
 2. Click **始業** when you start work — the time is written to Excel immediately.
