@@ -29,6 +29,7 @@ exe = EXE(
     pyz,
     a.scripts,
     [],
+    exclude_binaries=True,
     name="attendance_management",
     debug=False,
     bootloader_ignore_signals=False,
