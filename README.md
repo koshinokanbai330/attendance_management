@@ -11,7 +11,7 @@ Python-based attendance management desktop application targeting **Windows 11**.
 | **Break deduction** | Work time > 6 h → 1-hour break automatically deducted |
 | **Monthly total** | When all calendar days for a month are recorded, a total row is appended |
 | **Start / End buttons** | Timestamps written to Excel immediately and displayed in the window |
-| **Auto end-time** | On startup, if yesterday's end time is missing the app queries Windows Event Log for the first hibernate / lock / shutdown event that lasted ≥ 3 hours |
+| **Auto end-time** | On startup, scans all `Attendance_Sheet_*.xlsx` files across years and months to find the **latest** date with a start time but no end time, then queries Windows Event Log for a hibernate / lock / shutdown event on that date; the inferred time is written only if it falls between **12:00 and 23:59** on that date |
 | **Persistent folder** | Selected folder saved to `~/.attendance_config.json`; shown as `Empty` on first use |
 
 ## Requirements

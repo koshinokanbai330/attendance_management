@@ -10,8 +10,9 @@ Handles:
 """
 
 import calendar
+import glob
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Optional, Tuple
 
 from openpyxl import Workbook, load_workbook
@@ -110,35 +111,70 @@ class AttendanceManager:
             print(f"[AttendanceManager] fill_missing_end_time error: {exc}")
         return False
 
+    def find_latest_missing_end_date(self) -> Optional[date]:
+        """Scan all Attendance_Sheet_*.xlsx files and return the latest date that has
+        a start time but no end time.  Returns None if no such date exists or the
+        folder is not configured.
+        """
+        if not self.config.folder_path:
+            return None
+
+        pattern = os.path.join(self.config.folder_path, "Attendance_Sheet_*.xlsx")
+        today = datetime.now().date()
+        latest: Optional[date] = None
+
+        for file_path in glob.glob(pattern):
+            try:
+                wb = load_workbook(file_path, data_only=True)
+                try:
+                    for sheet_name in wb.sheetnames:
+                        ws = wb[sheet_name]
+                        for row in ws.iter_rows(min_row=2, values_only=True):
+                            if row[0] and "合計" in str(row[0]):
+                                continue
+                            date_val = row[0]
+                            start_val = row[1]
+                            end_val = row[2]
+                            if date_val and start_val and not end_val:
+                                try:
+                                    d = datetime.strptime(str(date_val).strip(), DATE_FMT).date()
+                                except ValueError:
+                                    continue
+                                if d < today and (latest is None or d > latest):
+                                    latest = d
+                finally:
+                    wb.close()
+            except Exception as exc:
+                print(f"[AttendanceManager] find_latest_missing_end_date error reading {file_path}: {exc}")
+
+        return latest
+
     def check_previous_day(self) -> None:
-        """Check yesterday's record and auto-fill end time from Windows events."""
+        """Find the most recent workday with a missing end time and auto-fill it
+        from Windows Event Log.
+
+        Search covers all Attendance_Sheet_*.xlsx files so year/month boundaries
+        are handled correctly.  The inferred end time is only accepted if it falls
+        within 12:00–23:59 on the target date.
+        """
         from windows_events import get_last_work_end_time
 
-        now = datetime.now()
-        yesterday = (now - timedelta(days=1)).date()
-
-        file_path = self.get_file_path(yesterday.year)
-        if not file_path or not os.path.exists(file_path):
+        target_date = self.find_latest_missing_end_date()
+        if target_date is None:
             return
 
-        sheet_name = self.get_sheet_name(yesterday.month)
+        end_time = get_last_work_end_time(target_date)
+        if end_time is None:
+            return
+
+        # Only accept end times in the 12:00–23:59:59 window on the target date
+        window_start = datetime(target_date.year, target_date.month, target_date.day, 12, 0)
+        window_end = datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59)
+        if not (window_start <= end_time <= window_end):
+            return
+
         try:
-            wb = load_workbook(file_path)
-            if sheet_name not in wb.sheetnames:
-                return
-            ws = wb[sheet_name]
-            data = self._read_data(ws)
-            date_str = yesterday.strftime(DATE_FMT)
-            for row in data:
-                if row[0] == date_str and row[1] and not row[2]:
-                    end_time = get_last_work_end_time(yesterday)
-                    if end_time:
-                        end_str = end_time.strftime(TIME_FMT)
-                        row[2] = end_str
-                        row[3] = self._calc_work_time(row[1], end_str)
-                        self._flush(ws, data, yesterday.year, yesterday.month)
-                        wb.save(file_path)
-                    break
+            self.fill_missing_end_time(target_date, end_time)
         except Exception as exc:
             print(f"[AttendanceManager] check_previous_day error: {exc}")
 
